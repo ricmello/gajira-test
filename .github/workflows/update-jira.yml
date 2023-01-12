@@ -17,13 +17,28 @@ jobs:
           JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
-      - name: find_issue_key
+      - name: Find Issue Key
+        id: find_issue_key
         uses: atlassian/gajira-find-issue-key@v3
         with:
           from: commits
 
-      - name: Transition issue
+      - name: Extract Branch Name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Mark as In Progress
         uses: atlassian/gajira-transition@master
+        if: steps.find_issue_key.outputs.issueKey != '' && steps.extract_branch.outputs.branch == 'develop'
         with:
           issue: ${{ steps.find_issue_key.outputs.issue }}
           transition: "In Progress"
+
+      - name: Mark as Done
+        uses: atlassian/gajira-transition@master
+        if: steps.find_issue_key.outputs.issueKey != '' && ${{ steps.extract_branch.outputs.branch }} == 'master'
+        with:
+          issue: ${{ steps.find_issue_key.outputs.issue }}
+          transition: "Done"
+
