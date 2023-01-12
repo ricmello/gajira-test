@@ -30,14 +30,14 @@ jobs:
 
       - name: Mark as In Progress
         uses: atlassian/gajira-transition@master
-        if: steps.find_issue_key.outputs.issueKey != '' && steps.extract_branch.outputs.branch == 'develop'
+        if: steps.find_issue_key.outputs.issue != '' && steps.extract_branch.outputs.branch == 'develop'
         with:
           issue: ${{ steps.find_issue_key.outputs.issue }}
           transition: "In Progress"
 
       - name: Mark as Done
         uses: atlassian/gajira-transition@master
-        if: steps.find_issue_key.outputs.issueKey != '' && ${{ steps.extract_branch.outputs.branch }} == 'master'
+        if: steps.find_issue_key.outputs.issue != '' && steps.extract_branch.outputs.branch == 'main'
         with:
           issue: ${{ steps.find_issue_key.outputs.issue }}
           transition: "Done"
