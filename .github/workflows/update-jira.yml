@@ -4,6 +4,8 @@ name: Test Transition Issue
 
 jobs:
   test-transition-issue:
+    permissions:
+      deployments: write
     name: Transition Issue
     runs-on: ubuntu-latest
     steps:
@@ -17,28 +19,54 @@ jobs:
           JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
-      - name: Find Issue Key
-        id: find_issue_key
-        uses: atlassian/gajira-find-issue-key@v3
+      - uses: chrnorm/deployment-action@v2
+        name: Create GitHub deployment
+        id: deployment
         with:
-          from: commits
+          token: '${{ github.token }}'
+          environment-url: http://my-app-url.com
+          environment: production
 
-      - name: Extract Branch Name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-
-      - name: Mark as In Progress
-        uses: atlassian/gajira-transition@master
-        if: steps.find_issue_key.outputs.issue != '' && steps.extract_branch.outputs.branch == 'develop'
+      - name: Update deployment status (success)
+        if: success()
+        uses: chrnorm/deployment-status@v2
         with:
-          issue: ${{ steps.find_issue_key.outputs.issue }}
-          transition: "In Progress"
+          token: "${{ github.token }}"
+          environment-url: ${{ steps.deployment.outputs.environment_url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: "success"
 
-      - name: Mark as Done
-        uses: atlassian/gajira-transition@master
-        if: steps.find_issue_key.outputs.issue != '' && steps.extract_branch.outputs.branch == 'main'
+      - name: Update deployment status (failure)
+        if: failure()
+        uses: chrnorm/deployment-status@v2
         with:
-          issue: ${{ steps.find_issue_key.outputs.issue }}
-          transition: "Done"
+          token: "${{ github.token }}"
+          environment-url: ${{ steps.deployment.outputs.environment_url }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          state: "failure"
+
+#      - name: Find Issue Key
+#        id: find_issue_key
+#        uses: atlassian/gajira-find-issue-key@v3
+#        with:
+#          from: commits
+#
+#      - name: Extract Branch Name
+#        shell: bash
+#        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+#        id: extract_branch
+#
+#      - name: Mark as In Progress
+#        uses: atlassian/gajira-transition@master
+#        if: steps.find_issue_key.outputs.issue != '' && steps.extract_branch.outputs.branch == 'develop'
+#        with:
+#          issue: ${{ steps.find_issue_key.outputs.issue }}
+#          transition: "In Progress"
+#
+#      - name: Mark as Done
+#        uses: atlassian/gajira-transition@master
+#        if: steps.find_issue_key.outputs.issue != '' && steps.extract_branch.outputs.branch == 'main'
+#        with:
+#          issue: ${{ steps.find_issue_key.outputs.issue }}
+#          transition: "Done"
 
